@@ -37,7 +37,6 @@ class SeedVR2UpscaleInvocation(BaseInvocation):
     scale: Literal["1.5x", "2x", "2.5x", "3x", "3.5x", "4x"] = InputField(
         default="2x", input=Input.Direct, description="Multiply the image width and height by this factor."
     )
-    longest_edge: int | None = InputField(default=None, ge=64, ui_hidden=True)
     seed: int = InputField(
         default=-1, ge=-1, le=4294967295, description="Use -1 for a new random seed each run."
     )
@@ -80,14 +79,6 @@ class SeedVR2UpscaleInvocation(BaseInvocation):
         return ImageOutput.build(context.images.save(image=result))
 
     def _output_size(self, image_size: tuple[int, int]) -> tuple[int, int]:
-        if self.longest_edge is not None and "scale" not in self.model_fields_set:
-            # Older workflow inputs specified a target size instead of a scale.
-            if self.longest_edge < max(image_size):
-                raise ValueError("The saved target size is smaller than the input image.")
-            factor = self.longest_edge / max(image_size)
-            width, height = (max(1, round(dimension * factor)) for dimension in image_size)
-        else:
-            factor = float(self.scale.removesuffix("x"))
-            width, height = (int(dimension * factor + 0.5) for dimension in image_size)
-
+        factor = float(self.scale.removesuffix("x"))
+        width, height = (int(dimension * factor + 0.5) for dimension in image_size)
         return width, height
